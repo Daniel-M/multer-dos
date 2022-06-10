@@ -1,0 +1,29 @@
+{
+  "name": "multer-dos",
+  "version": "1.0.0",
+  "description": "Multer S3 Adapted to Upload to Digital Ocean Spaces",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Daniel-M/multer-dos.git"
+  },
+  "keywords": [
+    "multer",
+    "multer-dos",
+    "s3",
+    "digital-ocean-spaces",
+    "digital-ocean"
+  ],
+  "author": "Daniel-M",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Daniel-M/multer-dos/issues"
+  },
+  "homepage": "https://github.com/Daniel-M/multer-dos#readme",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.105.0"
+  }
+}
