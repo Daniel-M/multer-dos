@@ -67,7 +67,7 @@ DigitalOceanSpaces.prototype._handleFile = function _handleFile (req, file, cb) 
           body.push(chunk)
         })
 
-        const Body = Buffer.concat(body, totalLength)
+        const Body = Buffer.concat(body, totalLength)        
 
         const putObjectInput = {
           Body,
@@ -85,8 +85,10 @@ DigitalOceanSpaces.prototype._handleFile = function _handleFile (req, file, cb) 
             null,
             {
               res: putObjectRes,
-              location: that.Bucket + "/" + that.Key,
+              location: putObjectInput.Bucket + "/" + putObjectInput.Key,
               size: totalLength,
+              key: putObjectInput.Key,
+              bucket: putObjectInput.Bucket
             }
           )}).catch(cb)
       })
