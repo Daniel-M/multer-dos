@@ -77,6 +77,7 @@ DigitalOceanSpaces.prototype._handleFile = function _handleFile (req, file, cb) 
             Bucket,
             Key,
             Metadata,
+            ContentLength: totalLength,
           }
 
           const putObjectCmd = new PutObjectCommand(putObjectInput)
