@@ -114,7 +114,6 @@ DigitalOceanSpaces.prototype._removeFile = function _removeFile (req, file, cb) 
           {
             response: deleteObjectRes,
             location: that.Bucket + "/" + that.Key,
-            size: totalLength,
           }
         )}).catch(cb)
     })
