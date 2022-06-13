@@ -60,37 +60,35 @@ DigitalOceanSpaces.prototype._handleFile = function _handleFile (req, file, cb) 
       if(err) { return cb(err, null) }
       that.getKey(req, file, (err, Key) => {
         if(err) { return cb(err, null) }
-        that.getMetadata(req,file, (err, Metadata) => {
-          if(err) { return cb(err, null) }
-          const body = []
-          let totalLength = 0
-          readStream.on('data', chunk => {
-            totalLength = totalLength + chunk.length
-            body.push(chunk)
-          })
-
-          const Body = Buffer.concat(body, totalLength)
-
-          const putObjectInput = {
-            Body,
-            ACL,
-            Bucket,
-            Key,
-            Metadata,
-            ContentLength: totalLength,
-          }
-
-          const putObjectCmd = new PutObjectCommand(putObjectInput)
-          const client = new S3Client(that.config)
-          client.send(putObjectCmd).then(putObjectRes => {
-            cb(
-              null,
-              {
-                location: that.Bucket + "/" + that.Key,
-                size: totalLength,
-              }
-            )}).catch(cb)
+        const body = []
+        let totalLength = 0
+        readStream.on('data', chunk => {
+          totalLength = totalLength + chunk.length
+          body.push(chunk)
         })
+
+        const Body = Buffer.concat(body, totalLength)
+
+        const putObjectInput = {
+          Body,
+          ACL,
+          Bucket,
+          Key,
+          // Metadata,
+          ContentLength: totalLength,
+        }
+
+        const putObjectCmd = new PutObjectCommand(putObjectInput)
+        const client = new S3Client(that.config)
+        client.send(putObjectCmd).then(putObjectRes => {
+          cb(
+            null,
+            {
+              res: putObjectRes,
+              location: that.Bucket + "/" + that.Key,
+              size: totalLength,
+            }
+          )}).catch(cb)
       })
     })
   })
@@ -114,6 +112,7 @@ DigitalOceanSpaces.prototype._removeFile = function _removeFile (req, file, cb) 
         cb(
           null,
           {
+            response: deleteObjectRes,
             location: that.Bucket + "/" + that.Key,
             size: totalLength,
           }
