@@ -1,6 +1,6 @@
 {
   "name": "multer-dos",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Multer S3 Adapted to Upload to Digital Ocean Spaces",
   "main": "index.js",
   "scripts": {

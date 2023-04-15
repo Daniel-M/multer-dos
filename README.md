@@ -6,6 +6,10 @@ This is an adaptation of the multer-s3 plugin to work with Digital Ocean Spaces.
 
 ## How to use it
 
+```sh
+npm install multer-dos
+```
+
 The options are the same as the ones in [multer documentation](https://www.npmjs.com/package/multer). To use the plugin just import the module and create a custom storage 
 object to be passed as the `storage` option of `multer` like in the example below,
 
