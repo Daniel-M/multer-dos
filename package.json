@@ -1,6 +1,6 @@
 {
   "name": "multer-dos",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "Multer S3 Adapted to Upload to Digital Ocean Spaces",
   "main": "index.js",
   "types": "index.d.ts",
@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && node test/smoke.cjs"
+    "test": "npm run typecheck && node --test test/*.test.cjs"
   },
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/Daniel-M/multer-dos#readme",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.105.0"
+    "@aws-sdk/client-s3": "^3.1172.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
