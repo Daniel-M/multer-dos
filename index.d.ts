@@ -2,6 +2,7 @@ import type {
   DeleteObjectCommandOutput,
   ObjectCannedACL,
   PutObjectCommandOutput,
+  S3Client,
   S3ClientConfig,
 } from '@aws-sdk/client-s3';
 
@@ -73,6 +74,7 @@ declare namespace multerDos {
     getBucket: ValueResolver<string>;
     getMetadata: ValueResolver<Record<string, string>> | undefined;
     config: S3ClientConfig;
+    client: S3Client;
 
     _handleFile(
       req: any,

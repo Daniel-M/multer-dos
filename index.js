@@ -1,8 +1,8 @@
-const { 
+const {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
-} = require("@aws-sdk/client-s3")
+} = require('@aws-sdk/client-s3')
 
 const crypto = require('crypto')
 
@@ -12,85 +12,107 @@ function getFilename (req, file, cb) {
   })
 }
 
+function resolveOption (value, defaultFn, typeName) {
+  if (typeof value === 'string') {
+    return function (_req, _file, cb) { cb(null, value) }
+  }
+  if (typeof value === 'function') {
+    return value
+  }
+  if (defaultFn) {
+    return defaultFn
+  }
+  throw new TypeError(typeName + ' must be a string or a function')
+}
+
 function DigitalOceanSpaces (opts) {
-
-  if (typeof opts.acl === 'string') {
-    this.getACL = function ($0, $1, cb) { cb(null, opts.acl) }
-  } else {
-    this.getACL = opts.acl || function ($0, $1, cb) { cb(null, 'private') }
+  if (!opts || typeof opts !== 'object') {
+    throw new TypeError('Options object is required')
   }
 
-  if (typeof opts.key === 'string') {
-    this.getKey = function ($0, $1, cb) { cb(null, opts.key) }
-  } else {
-    this.getKey = (opts.key || getFilename)
-  }
+  this.getACL = resolveOption(
+    opts.acl,
+    function (_req, _file, cb) { cb(null, 'private') },
+    'opts.acl'
+  )
 
-  if (typeof opts.bucket === 'string') {
-    this.getBucket = function ($0, $1, cb) { cb(null, opts.bucket) }
-  } else {
-    this.getBucket = opts.bucket
-  }
+  this.getKey = resolveOption(opts.key, getFilename, 'opts.key')
+  this.getBucket = resolveOption(opts.bucket, null, 'opts.bucket')
 
-  if (typeof opts.metadata === 'object') {
-    this.getMetadata = function ($0, $1, cb) { cb(null, opts.metadata) }
-  } else {
+  if (opts.metadata && typeof opts.metadata === 'object') {
+    this.getMetadata = function (_req, _file, cb) { cb(null, opts.metadata) }
+  } else if (typeof opts.metadata === 'function') {
     this.getMetadata = opts.metadata
+  } else {
+    this.getMetadata = undefined
   }
 
-  const s3ClientConfig = {
+  this.config = {
     endpoint: opts.endpoint,
     region: opts.region,
     credentials: {
       accessKeyId: opts.accessKeyId,
       secretAccessKey: opts.secretAccessKey,
-    }
+    },
   }
 
-  this.config = s3ClientConfig
+  this.client = new S3Client(this.config)
 }
 
 DigitalOceanSpaces.prototype._handleFile = function _handleFile (req, file, cb) {
   const that = this
-  const readStream = file.stream 
+  const readStream = file.stream
 
   that.getACL(req, file, (err, ACL) => {
-    if(err) { return cb(err, null) }
+    if (err) { return cb(err, null) }
     that.getBucket(req, file, (err, Bucket) => {
-      if(err) { return cb(err, null) }
+      if (err) { return cb(err, null) }
       that.getKey(req, file, (err, Key) => {
-        if(err) { return cb(err, null) }
+        if (err) { return cb(err, null) }
+
         const body = []
         let totalLength = 0
+        let settled = false
+
+        function done (err, info) {
+          if (settled) return
+          settled = true
+          cb(err, info)
+        }
+
         readStream.on('data', chunk => {
-          totalLength = totalLength + chunk.length
+          totalLength += chunk.length
           body.push(chunk)
         })
 
-        const Body = Buffer.concat(body, totalLength)        
+        readStream.on('error', err => {
+          done(err, null)
+        })
 
-        const putObjectInput = {
-          Body,
-          ACL,
-          Bucket,
-          Key,
-          // Metadata,
-          ContentLength: totalLength,
-        }
+        readStream.on('end', () => {
+          const Body = Buffer.concat(body, totalLength)
+          const putObjectInput = {
+            Body,
+            ACL,
+            Bucket,
+            Key,
+            ContentLength: totalLength,
+          }
 
-        const putObjectCmd = new PutObjectCommand(putObjectInput)
-        const client = new S3Client(that.config)
-        client.send(putObjectCmd).then(putObjectRes => {
-          cb(
-            null,
-            {
-              res: putObjectRes,
-              location: putObjectInput.Bucket + "/" + putObjectInput.Key,
-              size: totalLength,
-              key: putObjectInput.Key,
-              bucket: putObjectInput.Bucket
-            }
-          )}).catch(cb)
+          const putObjectCmd = new PutObjectCommand(putObjectInput)
+          that.client.send(putObjectCmd).then(
+            putObjectRes => {
+              done(null, {
+                res: putObjectRes,
+                location: putObjectInput.Bucket + '/' + putObjectInput.Key,
+                size: totalLength,
+                key: putObjectInput.Key,
+                bucket: putObjectInput.Bucket,
+              })
+            },
+            err => done(err, null)
+          )
+        })
       })
     })
   })
@@ -101,23 +123,24 @@ DigitalOceanSpaces.prototype._removeFile = function _removeFile (req, file, cb) 
   delete file.buffer
 
   that.getBucket(req, file, (err, Bucket) => {
-    if(err) { return cb(err, null) }
+    if (err) { return cb(err, null) }
     that.getKey(req, file, (err, Key) => {
-      if(err) { return cb(err, null) }
+      if (err) { return cb(err, null) }
+
       const deleteObjectInput = {
         Bucket,
         Key,
       }
       const deleteObjectCmd = new DeleteObjectCommand(deleteObjectInput)
-      const client = new S3Client(that.config)
-      client.send(deleteObjectCmd, cb).then(deleteObjectRes => {
-        cb(
-          null,
-          {
+      that.client.send(deleteObjectCmd).then(
+        deleteObjectRes => {
+          cb(null, {
             response: deleteObjectRes,
-            location: that.Bucket + "/" + that.Key,
-          }
-        )}).catch(cb)
+            location: deleteObjectInput.Bucket + '/' + deleteObjectInput.Key,
+          })
+        },
+        err => cb(err, null)
+      )
     })
   })
 }
