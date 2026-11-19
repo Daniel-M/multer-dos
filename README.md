@@ -10,7 +10,7 @@ This is an adaptation of the multer-s3 plugin to work with Digital Ocean Spaces.
 npm install multer-dos
 ```
 
-The options are the same as the ones in [multer documentation](https://www.npmjs.com/package/multer). To use the plugin just import the module and create a custom storage 
+The options are the same as the ones in [multer documentation](https://www.npmjs.com/package/multer). To use the plugin just import the module and create a custom storage
 object to be passed as the `storage` option of `multer` like in the example below,
 
 ```js
@@ -65,6 +65,40 @@ app.post('/cool-profile', cpUpload, function (req, res, next) {
   //  req.files['gallery'] -> Array
   //
   // req.body will contain the text fields, if there were any
+})
+```
+
+### TypeScript
+
+```ts
+import path from 'node:path'
+import express, { Request } from 'express'
+import multer from 'multer'
+import multerDos from 'multer-dos'
+
+// Customize the options just as with multer-s3
+const storage = multerDos({
+  acl: process.env.DO_SPACES_BUCKET_ACL_POLICY,
+  bucket: process.env.DO_SPACES_BUCKET_NAME!,
+  endpoint: process.env.DO_SPACES_ENDPOINT!,
+  region: process.env.DO_SPACES_REGION!,
+  accessKeyId: process.env.DO_SPACES_KEY!,
+  secretAccessKey: process.env.DO_SPACES_SECRET!,
+  key: (req: Request, file, cb) => {
+    const dir = path.join(process.env.DO_SPACES_BASE_PATH ?? '', ...req.url.split('/'))
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`
+    const ext = file.originalname.split('.').pop()
+    const key = path.join(dir, `${file.originalname}-${uniqueSuffix}.${ext}`)
+    cb(null, key)
+  },
+})
+
+// Load the custom storage into multer
+const upload = multer({ storage })
+const app = express()
+
+app.post('/profile', upload.single('avatar'), (req, res) => {
+  res.json({ file: req.file })
 })
 ```
 
